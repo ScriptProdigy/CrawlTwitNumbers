@@ -1,6 +1,7 @@
 from twitter import *
 import re
 import time
+import sqlite3
 
 class CrawlTwitNumbers:
     def __init__(self):
@@ -22,23 +23,39 @@ class CrawlTwitNumbers:
             self.processTweet(tweet)
 
     def processTweet(self, tweet):
-        try:
+        if('text' not in tweet.keys()):
+            return False
 
-            Numbers = ""
-            NumberResults = self.Regex.findall(tweet['text'])
-            
-            for number in NumberResults:
-                Numbers += number + " "
+        NumberResults = self.Regex.findall(tweet['text'])
+        if(len(NumberResults) > 0):
+            NumberResults = NumberResults[0]
+        else:
+            return False
 
+        if(len(NumberResults) > 0):
+            print tweet['user']['screen_name'] + " : " + tweet['text'] + " : " + str(NumberResults)
+            self.addtodb(tweet['user']['screen_name'], NumberResults)
 
-            if(len(NumberResults) > 0):
-                print tweet['user']['screen_name'] + " : " + tweet['text'] + " : " + str(Numbers)
-
-        except:
-            pass
 
     def addtodb(self, username, number):
-        pass
+
+        Database = sqlite3.connect('database.db')
+        DbCursor = Database.cursor()
+
+        DbCursor.execute("CREATE TABLE IF NOT EXISTS TwitterNumbers (twittername VARCHAR(255), phone VARCHAR(255));")
+        Database.commit()
+
+        Insert = "INSERT INTO TwitterNumbers VALUES (?,?);"
+        DbCursor.execute(Insert, (username, number))
+        Database.commit()
+
+        print Insert
+
+        Database.commit()
+        DbCursor.close()
+        Database.close()
+
+        print "Database Commited!"
 
 if(__name__ == "__main__"):
     crawl = CrawlTwitNumbers()
